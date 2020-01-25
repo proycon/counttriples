@@ -71,7 +71,6 @@ fn counttriplets(input: Vec<u32>, ratio: u32) -> usize {
 
             //Now all left indices, focus index (i), and right indexes are valid combinations as
             //long as left < focus < right
-            let mut subcount = 0;
             let focusindex: u32 = i.try_into().expect("Downcasting to u32");
             let leftindices: Vec<u32> = leftindices.unwrap().iter().filter(|x| *x < &focusindex).map(|x| *x).collect();
             let rightindices: Vec<u32> = rightindices.unwrap().iter().filter(|x| *x > &focusindex).map(|x| *x).collect();
