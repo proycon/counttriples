@@ -26,8 +26,8 @@ fn main() -> io::Result<()> {
 }
 
 
-fn counttriplets(input: Vec<u32>, ratio: u32) -> u64 {
-    let mut count: u64 = 0;
+fn counttriplets(input: Vec<u32>, ratio: u32) -> usize {
+    let mut count: usize = 0;
     let n = input.len();
 
     eprintln!("Building index...");
@@ -71,15 +71,24 @@ fn counttriplets(input: Vec<u32>, ratio: u32) -> u64 {
 
             //Now all left indices, focus index (i), and right indexes are valid combinations as
             //long as left < focus < right
+            let mut subcount = 0;
             let focusindex: u32 = i.try_into().expect("Downcasting to u32");
-            for leftindex in leftindices.unwrap().iter() {
-                for rightindex in rightindices.unwrap().iter() {
+            let leftindices: Vec<u32> = leftindices.unwrap().iter().filter(|x| *x < &focusindex).map(|x| *x).collect();
+            let rightindices: Vec<u32> = rightindices.unwrap().iter().filter(|x| *x > &focusindex).map(|x| *x).collect();
+            let subcount: usize = leftindices.len() * rightindices.len();
+            /*
+            //if we want to explicitly output all pairs (slower):
+            for leftindex in leftindices.iter() {
+                for rightindex in rightindices.iter() {
                     if *leftindex < focusindex && focusindex < *rightindex {
-                        count += 1;
+                        subcount += 1;
                         println!("[ {},{},{} ] @ ( {}, {}, {} )", leftvalue, value, rightvalue, leftindex, i, rightindex)
                     }
                 }
             }
+            */
+            count += subcount;
+            //eprintln!("@{} -> +{} (|{}|,|{}|)", focusindex,subcount, leftindices.len(), rightindices.len());
 
         }
     }
