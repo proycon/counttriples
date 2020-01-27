@@ -25,70 +25,60 @@ fn main() -> io::Result<()> {
     }
 }
 
+struct Counter {
+    total: u32,
+    thusfar: u32,
+}
+
+impl Default for Counter {
+    fn default() -> Counter {
+        Counter {
+            total: 0,
+            thusfar: 0
+        }
+    }
+}
+
 
 fn counttriplets(input: Vec<u32>, ratio: u32) -> usize {
     let mut count: usize = 0;
     let n = input.len();
 
-    eprintln!("Building index...");
+    eprintln!("Counting values...");
 
-    //Instantiate the index; data structure is ordered by key and allows for quick lookups
-    let mut index: BTreeMap<u32, Vec<u32>> = BTreeMap::new();
+    //Instantiate the counter; data structure is ordered by key and allows for quick lookups
+    let mut counter: BTreeMap<u32, Counter> = BTreeMap::new();
 
-    //Fill the index
+    //Fill the counter, we simply count how many times each value occurs
     for (i,value) in input.iter().enumerate() {
-        let entry = index.entry(*value).or_insert(Vec::new());
-        let i: u32 = i.try_into().expect("Downcasting usize to u32");
-        entry.push(i);
+        let entry = counter.entry(*value).or_insert(Counter::default());
+        entry.total += 1;
     }
 
-    eprintln!("Counting...");
+    eprintln!("Counting triples...");
 
     //Loop through the input array, considering a focus item (the middle number of the triplets)
     for (i,value) in input.iter().enumerate() {
+
         //discard the first and last element as they can never be a focus item, and the focus can only be a valid focus if it can be divided by the ratio
         if i > 0 && i < n-1 && value % ratio == 0 {
             let leftvalue = value / ratio;
-            let rightvalue = value.checked_mul(ratio);
+            if let Some(rightvalue) = value.checked_mul(ratio) { //checked multiplication to protect against integer overflow (if it overflow it won't be a valid triple anyhow)
 
-            if rightvalue == None {
-                //multiplication overflow, focus can't be valid
-                continue;
-            }
-            let rightvalue = rightvalue.unwrap();
-
-            //(leftvalue,value,rightvalue) forms  a value triple of geometric progression with the given ratio
-            //now we check if this pair actually exists in our input, by looking it up in the
-            //index
-
-            let leftindices = index.get(&leftvalue);
-            let rightindices = index.get(&rightvalue);
-            if leftindices.is_none() || rightindices.is_none() {
-                //one of the values doesn't exist, so discard this focus item and carry on with the
-                //next one
-                continue
-            }
-
-            //Now all left indices, focus index (i), and right indexes are valid combinations as
-            //long as left < focus < right
-            let focusindex: u32 = i.try_into().expect("Downcasting to u32");
-            let leftindices: Vec<u32> = leftindices.unwrap().iter().filter(|x| *x < &focusindex).map(|x| *x).collect();
-            let rightindices: Vec<u32> = rightindices.unwrap().iter().filter(|x| *x > &focusindex).map(|x| *x).collect();
-            let subcount: usize = leftindices.len() * rightindices.len();
-            /*
-            //if we want to explicitly output all pairs (slower):
-            for leftindex in leftindices.iter() {
-                for rightindex in rightindices.iter() {
-                    if *leftindex < focusindex && focusindex < *rightindex {
-                        subcount += 1;
-                        println!("[ {},{},{} ] @ ( {}, {}, {} )", leftvalue, value, rightvalue, leftindex, i, rightindex)
-                    }
+                //(leftvalue,value,rightvalue) forms  a value triple of geometric progression with the given ratio
+                //Check how many times we have seen leftvalue and how many times we have seen
+                //rightvalue
+                if let (Some(left), Some(right)) = (counter.get(&leftvalue),counter.get(&rightvalue)) {
+                    count += left.thusfar as usize * (right.total - right.thusfar) as usize;
+                    //eprintln!("@{} -> +{} (|{}|,|{}|)", focusindex,subcount, leftindices.len(), rightindices.len());
                 }
             }
-            */
-            count += subcount;
-            //eprintln!("@{} -> +{} (|{}|,|{}|)", focusindex,subcount, leftindices.len(), rightindices.len());
 
+        }
+
+        //count the current value
+        if let Some(mut current) = counter.get_mut(&value) {
+            current.thusfar += 1;
         }
     }
     count
